@@ -24,7 +24,28 @@
           @change="onFilePicked"
         >
       </v-flex>
-
+      <v-layout row>
+        <v-flex xs3>
+          <v-checkbox v-model="selections" label="Daily Downloads" value="daily_downloads"></v-checkbox>
+        </v-flex>
+        <v-flex xs3>
+          <v-checkbox
+            v-model="selections"
+            label="Daily Curse Downloads"
+            value="daily_curse_downloads"
+          ></v-checkbox>
+        </v-flex>
+        <v-flex xs3>
+          <v-checkbox
+            v-model="selections"
+            label="Daily Twitch Downloads"
+            value="daily_twitch_downloads"
+          ></v-checkbox>
+        </v-flex>
+        <v-flex xs3>
+          <v-checkbox v-model="selections" label="Points" value="points"></v-checkbox>
+        </v-flex>
+      </v-layout>
       <GChart class="chart" type="LineChart" :data="chartData" :options="chartOptions" fill-height/>
     </v-content>
   </v-app>
@@ -32,6 +53,9 @@
 
 <script>
 import moment from "moment";
+import { watch } from "fs";
+
+let csvData = [];
 
 export default {
   name: "App",
@@ -41,10 +65,10 @@ export default {
       chartData: [
         [
           "Date",
-          "Points",
           "Daily Downloads",
           "Daily Twitch Downloads",
-          "Daily Curse Downloads"
+          "Daily Curse Downloads",
+          "Points"
         ],
         ["", 1, 1, 1, 1]
       ],
@@ -52,7 +76,13 @@ export default {
         curveType: "function",
         vAxis: { viewWindow: { min: 0 } }
       },
-      fileName: ""
+      fileName: "",
+      selections: [
+        "daily_downloads",
+        "daily_curse_downloads",
+        "daily_twitch_downloads",
+        "points"
+      ]
     };
   },
   methods: {
@@ -68,26 +98,55 @@ export default {
       this.fileName = files[0].name;
       const reader = new FileReader();
       reader.onload = event => {
-        const data = this.parseCSV(event.target.result);
-        this.chartData = [];
-        this.chartData.push([
-          "Date",
-          "Points",
-          "Daily Downloads",
-          "Daily Twitch Downloads",
-          "Daily Curse Downloads"
-        ]);
-        for (let i = 0; i < data.length; i++) {
-          this.chartData.push([
-            data[i].date,
-            data[i].points,
-            data[i].dailyDownloads,
-            data[i].dailyTwitchDownloads,
-            data[i].dailyCurseDownloads
-          ]);
-        }
+        csvData = this.parseCSV(event.target.result);
+        this.updateChart();
       };
       reader.readAsText(files[0]);
+    },
+    updateChart() {
+      this.chartData = [];
+
+      let title = ["Date"];
+
+      for (let i = 0; i < this.selections.length; i++) {
+        switch (this.selections[i]) {
+          case "daily_downloads":
+            title.push("Daily Downloads");
+            break;
+          case "daily_curse_downloads":
+            title.push("Daily Curse Downloads");
+            break;
+          case "daily_twitch_downloads":
+            title.push("Daily Twitch Downloads");
+            break;
+          case "points":
+            title.push("Points");
+            break;
+        }
+      }
+
+      this.chartData.push(title);
+      for (let i = 0; i < csvData.length; i++) {
+        let row = [csvData[i].date];
+
+        for (let j = 0; j < this.selections.length; j++) {
+          switch (this.selections[j]) {
+            case "daily_downloads":
+              row.push(csvData[i].dailyDownloads);
+              break;
+            case "daily_curse_downloads":
+              row.push(csvData[i].dailyCurseDownloads);
+              break;
+            case "daily_twitch_downloads":
+              row.push(csvData[i].dailyTwitchDownloads);
+              break;
+            case "points":
+              row.push(csvData[i].points);
+              break;
+          }
+        }
+        this.chartData.push(row);
+      }
     },
     parseCSV(file) {
       const data = [];
@@ -97,13 +156,17 @@ export default {
         data.push({
           date: moment(colums[0], "YYYY-MM-DD").format("DD.MM.YYYY"),
           points: Number.parseFloat(colums[3], 10),
-          totalDownloads: Number.parseInt(colums[5], 10),
           dailyDownloads: Number.parseInt(colums[5], 10),
           dailyTwitchDownloads: Number.parseInt(colums[7], 10),
           dailyCurseDownloads: Number.parseInt(colums[8], 10)
         });
       }
       return data;
+    }
+  },
+  watch: {
+    selections(selections) {
+      this.updateChart();
     }
   }
 };
