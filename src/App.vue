@@ -1,59 +1,50 @@
 <template>
   <v-app>
-    <v-toolbar app>
-      <v-toolbar-title class="headline text-uppercase">
-        <span>Curseforge</span>
-        <span class="font-weight-light">Analyzer</span>
-      </v-toolbar-title>
-      <v-spacer></v-spacer>
-    </v-toolbar>
+    <v-main>
+      <v-toolbar>
+        <v-toolbar-title>
+          <span>CurseForge</span>
+          <span class="font-weight-light ml-1">Analytics</span>
+        </v-toolbar-title>
 
-    <v-content>
-      <v-flex xs12 class="text-xs-center text-sm-center text-md-center text-lg-center mt-4">
-        <v-text-field
-          label="Select CSV"
-          @click="pickFile"
-          v-model="fileName"
-          prepend-icon="attach_file"
-        ></v-text-field>
-        <input
-          type="file"
-          style="display: none"
-          ref="image"
-          accept="text/csv"
-          @change="onFilePicked"
-        >
-      </v-flex>
-      <v-layout row>
-        <v-flex xs3>
-          <v-checkbox v-model="selections" label="Daily Downloads" value="daily_downloads"></v-checkbox>
-        </v-flex>
-        <v-flex xs3>
+        <v-spacer></v-spacer>
+        <v-btn text href="https://authors.curseforge.com/dashboard/projects" target="_blank">
+          <v-icon class="mr-2">mdi-open-in-new</v-icon>Get Data
+        </v-btn>
+      </v-toolbar>
+
+      <v-file-input class="mx-8 mt-8" label="Select CSV" v-model="file" accept=".csv"></v-file-input>
+
+      <v-col cols="12">
+        <v-row justify="center">
+          <v-checkbox
+            v-model="selections"
+            label="Daily Downloads"
+            value="daily_downloads"
+            class="mr-8"
+          ></v-checkbox>
           <v-checkbox
             v-model="selections"
             label="Daily Curse Downloads"
             value="daily_curse_downloads"
+            class="mr-8"
           ></v-checkbox>
-        </v-flex>
-        <v-flex xs3>
           <v-checkbox
             v-model="selections"
             label="Daily Twitch Downloads"
             value="daily_twitch_downloads"
+            class="mr-8"
           ></v-checkbox>
-        </v-flex>
-        <v-flex xs3>
           <v-checkbox v-model="selections" label="Points" value="points"></v-checkbox>
-        </v-flex>
-      </v-layout>
-      <GChart class="chart" type="LineChart" :data="chartData" :options="chartOptions" fill-height/>
-    </v-content>
+        </v-row>
+      </v-col>
+      <GChart class="chart" type="LineChart" :data="chartData" :options="chartOptions" fill-height />
+    </v-main>
   </v-app>
 </template>
 
 <script>
 import moment from "moment";
-import { watch } from "fs";
 
 let csvData = [];
 
@@ -62,47 +53,31 @@ export default {
   components: {},
   data() {
     return {
+      file: null,
       chartData: [
         [
           "Date",
           "Daily Downloads",
           "Daily Twitch Downloads",
           "Daily Curse Downloads",
-          "Points"
+          "Points",
         ],
-        ["", 1, 1, 1, 1]
+        ["", 1, 1, 1, 1],
       ],
       chartOptions: {
         curveType: "function",
-        vAxis: { viewWindow: { min: 0 } }
+        vAxis: { viewWindow: { min: 0 } },
       },
       fileName: "",
       selections: [
         "daily_downloads",
         "daily_curse_downloads",
         "daily_twitch_downloads",
-        "points"
-      ]
+        "points",
+      ],
     };
   },
   methods: {
-    pickFile() {
-      this.$refs.image.click();
-    },
-    onFilePicked(e) {
-      const files = e.target.files;
-      if (files[0] === undefined) {
-        this.fileName = "";
-        return;
-      }
-      this.fileName = files[0].name;
-      const reader = new FileReader();
-      reader.onload = event => {
-        csvData = this.parseCSV(event.target.result);
-        this.updateChart();
-      };
-      reader.readAsText(files[0]);
-    },
     updateChart() {
       this.chartData = [];
 
@@ -158,17 +133,29 @@ export default {
           points: Number.parseFloat(colums[3], 10),
           dailyDownloads: Number.parseInt(colums[5], 10),
           dailyTwitchDownloads: Number.parseInt(colums[7], 10),
-          dailyCurseDownloads: Number.parseInt(colums[8], 10)
+          dailyCurseDownloads: Number.parseInt(colums[8], 10),
         });
       }
       return data;
-    }
+    },
   },
   watch: {
     selections(selections) {
       this.updateChart();
-    }
-  }
+    },
+    file(file) {
+      if (!file) {
+        return;
+      }
+      this.fileName = file.name;
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        csvData = this.parseCSV(event.target.result);
+        this.updateChart();
+      };
+      reader.readAsText(file);
+    },
+  },
 };
 </script>
 

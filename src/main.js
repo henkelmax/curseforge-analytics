@@ -1,9 +1,8 @@
 import Vue from 'vue'
-import './plugins/vuetify'
 import App from './App.vue'
+import vuetify from './plugins/vuetify';
 import 'roboto-fontface/css/roboto/roboto-fontface.css'
-import 'material-design-icons-iconfont/dist/material-design-icons.css'
-
+import '@mdi/font/css/materialdesignicons.css'
 import VueGoogleCharts from 'vue-google-charts'
 
 Vue.use(VueGoogleCharts)
@@ -11,5 +10,6 @@ Vue.use(VueGoogleCharts)
 Vue.config.productionTip = false
 
 new Vue({
-  render: function (h) { return h(App) },
+  vuetify,
+  render: h => h(App)
 }).$mount('#app')
